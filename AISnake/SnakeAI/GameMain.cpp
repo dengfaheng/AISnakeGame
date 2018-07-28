@@ -57,7 +57,6 @@ public:
 	}
 };
 
-
 class PrintInfo
 {
 public:
@@ -155,7 +154,6 @@ public:
 	//y: 1 to GameSetting::window_height - 2 闭区间
 	void RandomXY()
 	{
-		srand((unsigned int)time(0));
 		m_coordinate.x = rand() % (GameSetting::window_width - 30) + 1;
 		m_coordinate.y = rand() % (GameSetting::window_height - 2) + 1;
 	}
@@ -506,12 +504,12 @@ int main()
 		snake.ClearSnake();
 		
 		//snake.move_snake();
-
-		snake.AI_move_snake();
+		
 
 		snake.is_eat_food(food);
 		
 		snake.AI_find_path(food);
+		snake.AI_move_snake();
 		
 
 		snake.draw_snake();
