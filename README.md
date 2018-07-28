@@ -1,19 +1,37 @@
-# AISnake
-C++写的一个AI贪吃蛇
-```C++
-FindPathBFS::FindPathBFS()
-{
-	m_size.x = 52;
-	m_size.y = 40;
-	m_chess = new bool *[m_size.x];
-	m_visit = new bool *[m_size.x];
-	m_parent = new COORDINATE *[m_size.x];
+# C++编写的一个AI贪吃蛇
 
-	for (int i = 0; i < m_size.x; i++)
-	{
-		m_chess[i] = new bool[m_size.y];
-		m_visit[i] = new bool[m_size.y];
-		m_parent[i] = new COORDINATE[m_size.y];
-	}
-}
-```
+## 总体概况
+- 开发环境：VIsual Studio 2017
+- 开发语言：C++ 和 少许Windows API
+- 运行环境：Windows 10
+
+- 效果如下：
+
+    ![](http://oyxhmjutw.bkt.clouddn.com/18-7-28/88541400.jpg)
+    ![](http://oyxhmjutw.bkt.clouddn.com/18-7-28/43713898.jpg)
+
+## 已知问题
+
+目前这货还不能算成品。基本是蛇每移动一次，就进行一次BFS找路。但是不能保证每一次都能找到一条路，找不到路的时候怎么办呢？我们让蛇随机走几步，走几步以后就有可能找到路了。但是这样做带来的后果就是：可能随机走着走着就走进死胡同了，结果只能GG。
+
+改进的话：我想到一个点就是，BFS找不到路的时候，不随机走。而是有规律跟着尾巴走，比如做S型运动等。想法是这样，代码待写。
+
+
+## 下载使用
+
+大体情况就是这样，代码是VS2017编译的。大家可以下载后，VS2017的直接打开，其他编译器的，新建一个工程，把.h和.cpp文件拖进去编译即可。
+
+具体的代码详解，会在后续发表相关文章的。也会更新在这里。
+
+## 完善
+最后就是想不断完善这个小程序，毕竟麻雀虽小五脏俱全。想把各种算法都实现一遍。
+
+盲目式搜索：
+- BFS
+- DFS
+
+启发式搜索：
+- AStar
+- 有序搜索
+
+慢慢完成吧。
