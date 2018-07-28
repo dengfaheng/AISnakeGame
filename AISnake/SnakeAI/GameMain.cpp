@@ -19,7 +19,7 @@ int dir[4][2] = { { 0,1 },{ 0,-1 },{ 1,0 },{ -1,0 } };
 #define RIGHT 4
 #define HEAD 0
 
-int speed = 50;
+int speed = 0;
 
 void gotoxy(int x, int y)
 {
@@ -102,9 +102,15 @@ public:
 	static void DrawScore(int score)
 	{
 		gotoxy(GameSetting::window_width - 22, 6);
+		cout << "                       ";
+		gotoxy(GameSetting::window_width - 22, 4);
+		cout << "                       ";
+
+		gotoxy(GameSetting::window_width - 22, 6);
 		cout << "当前玩家分数: " << score << endl;
 		gotoxy(GameSetting::window_width - 22, 4);
-		cout << "当前游戏速度: " << 11 - speed / 25 << endl;
+		cout << "当前游戏速度: " << 10 - speed / 25 << endl;
+
 	}
 
 	static void DrawGameInfo(bool model)
@@ -152,15 +158,27 @@ public:
 	//坐标范围：
 	//x: 1 to GameSetting::window_width - 30 闭区间
 	//y: 1 to GameSetting::window_height - 2 闭区间
-	void RandomXY()
+	void RandomXY(vector<COORDINATE> & coord)
 	{
 		m_coordinate.x = rand() % (GameSetting::window_width - 30) + 1;
 		m_coordinate.y = rand() % (GameSetting::window_height - 2) + 1;
+		unsigned int i;
+		for (i = 0; i < coord.size(); i++)
+		{
+			if (coord[i].x == m_coordinate.x && coord[i].y == m_coordinate.y)
+			{
+				m_coordinate.x = rand() % (GameSetting::window_width - 30) + 1;
+				m_coordinate.y = rand() % (GameSetting::window_height - 2) + 1;
+				i = 0;
+			}
+		}
 	}
 
-	Food()
+	Food() {}
+
+	Food(vector<COORDINATE> & coord)
 	{
-		RandomXY();
+		RandomXY(coord);
 	}
 
 	void DrawFood()
@@ -184,15 +202,16 @@ class Snake
 {
 private:
 	bool m_model; //true人机  false AI
-	vector<COORDINATE> m_coordinate;
 	int m_direction;
 	bool m_is_alive;
 	bool m_chess[GameSetting::window_width - 29 + 1][GameSetting::window_height]; //AI功能用
 	FindPathBFS m_AISnake;
 	COORDINATE map_size;
+public:
+	vector<COORDINATE> m_coordinate;
 
 public:
-	Snake(bool model = true) : m_model(model) //默认人机模式
+	Snake(bool model = false) : m_model(model) //默认人机模式
 	{
 		map_size.x = GameSetting::window_width - 29 + 1;
 		map_size.y = GameSetting::window_height;
@@ -222,11 +241,6 @@ public:
 			m_chess[GameSetting::window_width - 29][j] = true;
 		}
 
-	}
-
-	bool GetModel()
-	{
-		return m_model;
 	}
 
 	void listen_key_borad()
@@ -263,7 +277,7 @@ public:
 				this->m_direction = RIGHT;
 				break;
 			case '+':
-				if (speed > 25)
+				if (speed >= 25)
 				{
 					speed -= 25;
 				}
@@ -288,7 +302,7 @@ public:
 			switch (ch)
 			{
 			case '+':
-				if (speed > 25)
+				if (speed >= 25)
 				{
 					speed -= 25;
 				}
@@ -359,9 +373,9 @@ public:
 			//                          下        上     左       右
 			//int direction[4][2] = { { 0,1 },{ 0,-1 },{ 1,0 },{ -1,0 } };
 			//随机走一步，但是不能碰墙或者碰到自己
-			while(true)
+			for (int i = 0; i < 4; i++)
 			{
-				int i = rand() % 4;
+				int break_num = rand() % 4;
 				temp = m_coordinate[HEAD];
 				temp.x = temp.x + dir[i][0];
 				temp.y = temp.y + dir[i][1];
@@ -376,7 +390,8 @@ public:
 					continue;
 				}
 				head = temp;
-				break;
+				if(break_num == i)
+					break;
 			}
 		}
 
@@ -416,7 +431,7 @@ public:
 		COORDINATE food_coordinate = f.GetFoodCoordinate();
 		if (m_coordinate[HEAD].x == food_coordinate.x && m_coordinate[HEAD].y == food_coordinate.y)
 		{
-			f.RandomXY();
+			f.RandomXY(m_coordinate);
 			return true;
 		}
 		else
@@ -478,8 +493,14 @@ public:
 		return m_coordinate.size();
 	}
 
+	bool GetModel()
+	{
+		return m_model;
+	}
+
 
 };
+
 
 int main()
 {
@@ -491,25 +512,28 @@ int main()
 	print_info.DrawMap();
 	print_info.DrawGameInfo(snake.GetModel());
 
-	Food food;
-	snake.AI_find_path(food);
+	Food food(snake.m_coordinate);
 
 	while (true)
 	{
-		//print_info.ClearScreen();
 		print_info.DrawScore(snake.GetSnakeSize());
 
 		food.DrawFood();
 
 		snake.ClearSnake();
-		
-		//snake.move_snake();
-		
 
 		snake.is_eat_food(food);
 		
-		snake.AI_find_path(food);
-		snake.AI_move_snake();
+		if (snake.GetModel() == true)
+		{
+			snake.move_snake();
+		}
+		else
+		{
+			snake.AI_find_path(food);
+			snake.AI_move_snake();
+		}
+		
 		
 
 		snake.draw_snake();
