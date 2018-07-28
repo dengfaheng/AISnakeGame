@@ -61,10 +61,21 @@ class PrintInfo
 {
 public:
 
+	static void DrawChoiceInfo()
+	{
+		gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 - 5);
+		cout << "请选择游戏模式：" << endl;
+		gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 - 3);
+		cout << "1. 手动操作模式" << endl;
+		gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 - 1);
+		cout << "2. AI智能模式" << endl;
+		gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 + 1);
+		cout << "请输入您的选择-> ";
+	}
 
-public:
 	static void DrawMap()
 	{
+		system("cls");
 		int i, j;
 		for (i = 0; i < GameSetting::window_width; i++)
 			cout << "#";
@@ -93,18 +104,21 @@ public:
 			cout << "#";
 		
 	}
-	static void GameOver()
+	static void GameOver(int score)
 	{
-		gotoxy(GameSetting::window_width / 2 - 15, GameSetting::window_height / 2);
-		cout << "游戏结束" << endl;;
+		setColor(12, 0);
+		gotoxy(GameSetting::window_width / 2 - 20, GameSetting::window_height / 2 - 5);
+		cout << "游戏结束，您输了！" << endl;;
+		gotoxy(GameSetting::window_width / 2 - 20, GameSetting::window_height / 2 - 3);
+		cout << "您的得分为：" << score << endl;
 	}
 
 	static void DrawScore(int score)
 	{
-		gotoxy(GameSetting::window_width - 22, 6);
-		cout << "                       ";
-		gotoxy(GameSetting::window_width - 22, 4);
-		cout << "                       ";
+		gotoxy(GameSetting::window_width - 22+14, 6);
+		cout << "  ";
+		gotoxy(GameSetting::window_width - 22+14, 4);
+		cout << "  ";
 
 		gotoxy(GameSetting::window_width - 22, 6);
 		cout << "当前玩家分数: " << score << endl;
@@ -243,6 +257,8 @@ public:
 
 	}
 
+	void set_model(bool m) { m_model = m; }
+
 	void listen_key_borad()
 	{
 		char ch;
@@ -334,12 +350,6 @@ public:
 		m_AISnake.InitMap((bool**)m_chess);
 		m_AISnake.GetPath(begin_point, end_point);
 
-		if (m_AISnake.m_paths_queue.empty())
-		{
-			gotoxy(GameSetting::window_width - 22, 38);
-			cout << "not_found = " << not_found++ << endl;
-		}
-
 	}
 	//检测是否碰到自己
 	bool self_collision(COORDINATE head)
@@ -363,10 +373,6 @@ public:
 		{
 			head = m_AISnake.m_paths_queue.front();
 			m_AISnake.m_paths_queue.pop();
-
-			gotoxy(GameSetting::window_width - 22, 36);
-			cout << "cot = "<< cot++ << endl;
-			
 		}
 		else
 		{
@@ -509,6 +515,28 @@ int main()
 	Snake  snake;
 
 	setting.GameInit();
+	print_info.DrawChoiceInfo();
+
+	char ch = _getch();
+	switch (ch)
+	{
+	case '1':
+		snake.set_model(true);
+		speed = 50;
+		break;
+	case '2':
+		snake.set_model(false);
+		break;
+	default:
+		gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 + 3);
+		cout << "输入错误，Bye！" << endl;
+		cin.get();
+		cin.get();
+		return 0;
+	}
+	gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 + 3);
+	system("pause");
+
 	print_info.DrawMap();
 	print_info.DrawGameInfo(snake.GetModel());
 
@@ -541,7 +569,7 @@ int main()
 
 		if (!snake.snake_is_alive())
 		{
-			print_info.GameOver();
+			print_info.GameOver(snake.GetSnakeSize());
 			break;
 		}
 
@@ -549,8 +577,8 @@ int main()
 		Sleep(speed);
 	}
 
-	
+	cin.get();
+	cin.get();
 
-	std::cin.get();
 	return 0;
 }

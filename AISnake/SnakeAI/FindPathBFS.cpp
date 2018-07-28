@@ -23,18 +23,18 @@ FindPathBFS::FindPathBFS()
 
 FindPathBFS::~FindPathBFS()
 {
-	/*
-	//为二维数组开辟空间
-	int **p = new int*[num1];
-	for(int i=0; i <num1; ++i)
-	p[i] = new int[num2];
 
+	for (int i = 0; i < m_size.x; i++)
+	{
+		delete[] m_chess[i];
+		delete[] m_visit[i];
+		delete[] m_parent[i];
+	}
 
-	//释放二维数组占用的空间
-	for(int m=0;m <num1;m++)
-	delete[] p[m];
-	delete[] p;
-	*/
+	delete[] m_chess;
+	delete[] m_visit;
+	delete[] m_parent;
+
 }
 
 void FindPathBFS::InitMap(bool **chess)
