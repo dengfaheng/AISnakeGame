@@ -7,10 +7,8 @@
 #include <Windows.h>
 
 #include "FindPathBFS.h"
-
 using namespace std;
 
-//⦾
 int dir[4][2] = { { 0,1 },{ 0,-1 },{ 1,0 },{ -1,0 } };
 
 #define UP 1
@@ -20,28 +18,30 @@ int dir[4][2] = { { 0,1 },{ 0,-1 },{ 1,0 },{ -1,0 } };
 #define HEAD 0
 
 int speed = 0;
-
+//将光标移动到x,y位置
 void gotoxy(int x, int y)
 {
 	COORD c;
 	c.X = x; c.Y = y;
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
-
+//设置颜色 用到两个Windows API  不做详细介绍
 void setColor(unsigned short ForeColor = 7, unsigned short BackGroundColor = 0)
 {
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);//获取当前窗口句柄
 	SetConsoleTextAttribute(handle, ForeColor + BackGroundColor * 0x10);//设置颜色
 }
-
+//游戏设置相关模块，把函数都放到一个类里面了。函数定义为static静态成员，不生成实体也可以直接调用
 class GameSetting
 {
 public:
+	//游戏窗口的长宽
 	static const int window_height = 40;
 	static const int window_width = 80;
 public:
 	static void GameInit()
 	{
+		//设置游戏窗口大小
 		char buffer[32];
 		sprintf_s(buffer, "mode con cols=%d lines=%d",window_width, window_height);
 		system(buffer);
@@ -52,15 +52,15 @@ public:
 		GetConsoleCursorInfo(handle, &CursorInfo);//获取控制台光标信息
 		CursorInfo.bVisible = false; //隐藏控制台光标
 		SetConsoleCursorInfo(handle, &CursorInfo);//设置控制台光标状态
-
+		//初始化随机数种子
 		srand((unsigned int)time(0));
 	}
 };
-
+//打印信息类，打印相关信息：欢迎，分数，说明，结束等等
 class PrintInfo
 {
 public:
-
+	//选择模式：手动? AI?
 	static void DrawChoiceInfo()
 	{
 		gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 - 5);
@@ -72,7 +72,7 @@ public:
 		gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 + 1);
 		cout << "请输入您的选择-> ";
 	}
-
+	//画地图边界
 	static void DrawMap()
 	{
 		system("cls");
@@ -104,6 +104,7 @@ public:
 			cout << "#";
 		
 	}
+	//游戏结束
 	static void GameOver(int score)
 	{
 		setColor(12, 0);
@@ -112,7 +113,7 @@ public:
 		gotoxy(GameSetting::window_width / 2 - 20, GameSetting::window_height / 2 - 3);
 		cout << "您的得分为：" << score << endl;
 	}
-
+	//画分数
 	static void DrawScore(int score)
 	{
 		gotoxy(GameSetting::window_width - 22+14, 6);
@@ -126,7 +127,7 @@ public:
 		cout << "当前游戏速度: " << 10 - speed / 25 << endl;
 
 	}
-
+	//画游戏操作说明等
 	static void DrawGameInfo(bool model)
 	{
 		gotoxy(GameSetting::window_width - 22, 8);
@@ -162,12 +163,12 @@ public:
 	}
 
 };
-
+//食物类，定义食物的生成等相关操作
 class Food
 {
 private:
+	//食物坐标
 	COORDINATE m_coordinate;
-
 public:
 	//坐标范围：
 	//x: 1 to GameSetting::window_width - 30 闭区间
@@ -177,8 +178,10 @@ public:
 		m_coordinate.x = rand() % (GameSetting::window_width - 30) + 1;
 		m_coordinate.y = rand() % (GameSetting::window_height - 2) + 1;
 		unsigned int i;
+		//原则上不允许食物出现在蛇的位置上，如果有，重新生成
 		for (i = 0; i < coord.size(); i++)
 		{
+			//食物出现在蛇身的位置上。重新生成
 			if (coord[i].x == m_coordinate.x && coord[i].y == m_coordinate.y)
 			{
 				m_coordinate.x = rand() % (GameSetting::window_width - 30) + 1;
@@ -187,14 +190,14 @@ public:
 			}
 		}
 	}
-
+	//默认构造函数
 	Food() {}
-
+	//构造函数，传入参数为蛇身坐标
 	Food(vector<COORDINATE> & coord)
 	{
 		RandomXY(coord);
 	}
-
+	//画出食物的位置
 	void DrawFood()
 	{
 		setColor(12, 0);
@@ -202,15 +205,14 @@ public:
 		cout << "@";
 		setColor(7, 0);
 	}
-
+	//接口，获取食物位置
 	COORDINATE GetFoodCoordinate()
 	{
 		return m_coordinate;
 	}
 
 };
-
-
+//贪吃蛇类，定义贪吃蛇的移动，打印，吃食物等等
 //地图范围width:2 to width-2  height: 2 to height-2
 class Snake
 {
@@ -218,18 +220,19 @@ private:
 	bool m_model; //true人机  false AI
 	int m_direction;
 	bool m_is_alive;
+private: //AI功能相关
 	bool m_chess[GameSetting::window_width - 29 + 1][GameSetting::window_height]; //AI功能用
 	FindPathBFS m_AISnake;
 	COORDINATE map_size;
-public:
+public://蛇身坐标
 	vector<COORDINATE> m_coordinate;
 
-public:
+public://默认构造函数
 	Snake(bool model = false) : m_model(model) //默认人机模式
 	{
 		map_size.x = GameSetting::window_width - 29 + 1;
 		map_size.y = GameSetting::window_height;
-
+		//移动方向向上
 		m_direction = 1;
 		m_is_alive = true;
 		COORDINATE snake_head;
@@ -256,9 +259,9 @@ public:
 		}
 
 	}
-
+	//设置游戏模式
 	void set_model(bool m) { m_model = m; }
-
+	//监听键盘
 	void listen_key_borad()
 	{
 		char ch;
@@ -307,7 +310,7 @@ public:
 			}
 		}
 	}
-
+	//AI功能
 	void AI_speed()
 	{
 		char ch;
@@ -332,7 +335,7 @@ public:
 			}
 		}
 	}
-
+	//AI功能
 	void AI_find_path(Food &f)
 	{
 		static int not_found = 1;
@@ -363,7 +366,7 @@ public:
 		}
 		return false;
 	}
-
+	//AI功能
 	void AI_move_snake()
 	{
 		static int cot = 0;
@@ -403,14 +406,13 @@ public:
 
 		m_coordinate.insert(m_coordinate.begin(), head);
 	}
-
+	//移动贪吃蛇
 	void move_snake()
 	{
-
+		//监听键盘
 		listen_key_borad();
-
+		//蛇头
 		COORDINATE head = m_coordinate[0];
-
 		//direction方向:1 上  2 下  3 左  4 右
 		switch (this->m_direction)
 		{
@@ -427,14 +429,15 @@ public:
 			head.x++;
 			break;
 		}
-
+		//插入移动后新的蛇头
 		m_coordinate.insert(m_coordinate.begin(), head);
 	}
-
+	//判断是否吃到食物
 	bool is_eat_food(Food & f)
 	{
-		//TODO
+		//获取食物坐标
 		COORDINATE food_coordinate = f.GetFoodCoordinate();
+		//吃到食物，食物重新生成，不删除蛇尾
 		if (m_coordinate[HEAD].x == food_coordinate.x && m_coordinate[HEAD].y == food_coordinate.y)
 		{
 			f.RandomXY(m_coordinate);
@@ -442,11 +445,12 @@ public:
 		}
 		else
 		{
+			//没有吃到食物，删除蛇尾
 			m_coordinate.erase(m_coordinate.end() - 1);
 			return false;
 		}
 	}
-
+	//判断贪吃蛇死了没
 	bool snake_is_alive()
 	{
 		if (m_coordinate[HEAD].x <= 0 ||
@@ -471,18 +475,20 @@ public:
 
 		return m_is_alive;
 	}
-
+	//画出贪吃蛇
 	void draw_snake()
 	{
+		//设置颜色为浅绿色
 		setColor(10, 0);
 		for (unsigned int i = 0; i < this->m_coordinate.size(); i++)
 		{
 			gotoxy(m_coordinate[i].x, m_coordinate[i].y);
 			cout << "*";
 		}
+		//恢复原来的颜色
 		setColor(7, 0);
 	}
-
+	//清除屏幕上的贪吃蛇
 	void ClearSnake()
 	{
 		for (unsigned int i = 0; i < m_coordinate.size(); i++)
@@ -493,28 +499,27 @@ public:
 		cout << " ";
 
 	}
-
+	//获取贪吃蛇的长度
 	int GetSnakeSize()
 	{
 		return m_coordinate.size();
 	}
-
+	//获取当前游戏模式
 	bool GetModel()
 	{
 		return m_model;
 	}
-
-
 };
 
-
+//主函数，组合各种类和资源，进行游戏。
 int main()
 {
 	GameSetting setting;
 	PrintInfo print_info;
 	Snake  snake;
-
+	//初始化游戏
 	setting.GameInit();
+	//游戏模式选择
 	print_info.DrawChoiceInfo();
 
 	char ch = _getch();
@@ -536,22 +541,23 @@ int main()
 	}
 	gotoxy(GameSetting::window_width / 2 - 10, GameSetting::window_height / 2 + 3);
 	system("pause");
-
+	//画地图
 	print_info.DrawMap();
 	print_info.DrawGameInfo(snake.GetModel());
-
+	//生成食物
 	Food food(snake.m_coordinate);
-
+	//游戏死循环
 	while (true)
 	{
+		//打印成绩
 		print_info.DrawScore(snake.GetSnakeSize());
-
+		//画出食物
 		food.DrawFood();
-
+		//清理蛇尾，每次画蛇前必做
 		snake.ClearSnake();
-
+		//判断是否吃到食物
 		snake.is_eat_food(food);
-		
+		//根据用户模式选择不同的调度方式
 		if (snake.GetModel() == true)
 		{
 			snake.move_snake();
@@ -561,19 +567,15 @@ int main()
 			snake.AI_find_path(food);
 			snake.AI_move_snake();
 		}
-		
-		
-
+		//画蛇
 		snake.draw_snake();
-		
-
+		//判断蛇是否还活着
 		if (!snake.snake_is_alive())
 		{
 			print_info.GameOver(snake.GetSnakeSize());
 			break;
 		}
-
-		
+		//控制游戏速度
 		Sleep(speed);
 	}
 
